@@ -113,6 +113,10 @@ int init_result(AtResult* result);
 static
 void destruct_result(AtResult* result);
 
+static
+AtCheckResult make_check_result(int status, const char* message,
+                                void (*clean_up)(const char*));
+
 /* Exposed functions */
 
 int at_add_test(AtSuite* suite, AtTest* test) {
@@ -133,10 +137,10 @@ int at_assert_f(AtCheckResult check, const char* file_name, int line_number) {
 }
 
 
-void at_error_f(const char* message, const char* file_name, int line_number) {
+void at_error_f(const char* message, void (*clean_up)(const char*),
+                const char* file_name, int line_number) {
 	AtResult* result = at_current_result;
-	AtCheckResult check = { AtCheck_ERROR, };
-	check.message = message;
+	AtCheckResult check = at_make_error(message, clean_up);
 
 	process_result(&check, result, file_name, line_number);
 }
@@ -224,6 +228,20 @@ void at_run_suite(AtSuite* suite, AtReporter* reporter) {
 	}
 }
 
+AtCheckResult at_make_error(const char* msg, void (*clean_up) (const char*)) {
+	return make_check_result(AtCheck_ERROR, msg, clean_up);
+}
+
+
+AtCheckResult at_make_failure(const char* msg,
+                              void (*clean_up) (const char*)) {
+	return make_check_result(AtCheck_FAILURE, msg, clean_up);
+}
+
+
+AtCheckResult at_make_success(void) {
+	return make_check_result(AtCheck_SUCCESS, NULL, NULL);
+}
 
 /* Internal function definitions. */
 
@@ -603,4 +621,17 @@ void destruct_result(AtResult* result) {
 		}
 	}
 	failarray_destruct(&result->failures);
+}
+
+
+static
+AtCheckResult make_check_result(int status, const char* message,
+                                void (*clean_up)(const char*)) {
+	AtCheckResult result;
+
+	result.status = status;
+	result.message = message;
+	result.clean_up = clean_up;
+
+	return result;
 }

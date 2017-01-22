@@ -62,7 +62,8 @@ void* at_alloc(size_t);
 
 int at_assert_f(AtCheckResult check, const char* file_name, int line_number);
 
-void at_error_f(const char* message, const char* file_name, int line_number);
+void at_error_f(const char* message, void (*clean_up)(const char*),
+                const char* file_name, int line_number);
 
 AtStreamReporter* at_new_stream_reporter(const char* file_name);
 
@@ -74,11 +75,18 @@ void at_destroy_suite(AtSuite* suite);
 
 void at_run_suite(AtSuite* suite, AtReporter* reporter);
 
+AtCheckResult at_make_error(const char* msg, void (*clean_up) (const char*));
+
+AtCheckResult at_make_failure(const char* msg, void (*clean_up) (const char*));
+
+AtCheckResult at_make_success(void);
+
+
 #define at_assert(CHECK)\
 	if (!at_assert_f(CHECK, __FILE__, __LINE__)) return
 
-#define at_error(MSG)\
-	do { at_error_f(MSG, __FILE__, __LINE__); return; } while(0)
+#define at_error(MSG, CLEANUP)\
+	do { at_error_f(MSG, CLEANUP, __FILE__, __LINE__); return; } while(0)
 
 
 #define at_constructor
