@@ -38,5 +38,5 @@ Basically all you need is a C89 compatible compiler and a flavour of Make.
 ## License
 
 This project is licensed under the BSD 3-Clause License - see the
-[LICENSE.md](LICENSE.md) file for details
+[LICENSE](LICENSE) file for details
 
