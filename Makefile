@@ -19,7 +19,7 @@ dist/atest.h: src/atest.h dist
 
 
 dist/libatcheck.a: $(LIBATCHECK_OBJS) dist
-	ar rcs $@ $(LIBATEST_OBJS)
+	ar rcs $@ $(LIBATCHECK_OBJS)
 
 
 dist/atcheck.h: src/atcheck.h
