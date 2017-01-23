@@ -7,18 +7,18 @@ LIBATCHECK_OBJS=$(LIBATCHECK_SOURCES:src/%.c=build/%.o)
 COMPILE_FLAGS=-pedantic -Wall $(CFLAGS)
 
 .PHONY: all
-all: dist/libatest.a dist/atest.h dist/libatcheck.a dist/atcheck.h
+all: dist build dist/libatest.a dist/atest.h dist/libatcheck.a dist/atcheck.h
 
 
-dist/libatest.a: $(LIBATEST_OBJS) dist
+dist/libatest.a: $(LIBATEST_OBJS)
 	ar rcs $@ $(LIBATEST_OBJS)
 
 
-dist/atest.h: src/atest.h dist
+dist/atest.h: src/atest.h
 	cp $< $@
 
 
-dist/libatcheck.a: $(LIBATCHECK_OBJS) dist
+dist/libatcheck.a: $(LIBATCHECK_OBJS)
 	ar rcs $@ $(LIBATCHECK_OBJS)
 
 
@@ -26,7 +26,7 @@ dist/atcheck.h: src/atcheck.h
 	cp $< $@
 
 
-build/%.o: src/%.c build
+build/%.o: src/%.c
 	$(CC) -c $< -o $@ $(COMPILE_FLAGS)
 
 
