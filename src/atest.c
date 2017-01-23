@@ -568,7 +568,9 @@ int do_run_test(void* data) {
 		suite->setup();
 	}
 
-	test->test_func();
+	if (!result->has_error) {
+		test->test_func();
+	}
 
 	if (suite->teardown != NULL) {
 		suite->teardown();
