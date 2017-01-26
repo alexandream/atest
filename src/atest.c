@@ -17,9 +17,17 @@ AtContext* at_current_context;
 
 typedef struct TestArray TestArray;
 typedef struct FailureArray FailureArray;
+typedef struct TestSummary TestSummary;
 
 struct TestArray {
 	ARRAY_BODY(AtTest);
+};
+
+
+struct TestSummary {
+	int tests;
+	int errors;
+	int failures;
 };
 
 
@@ -29,6 +37,7 @@ struct FailureArray {
 
 
 struct AtResult {
+	const char* iteration_name;
 	int has_error;
 	AtCheckResult error;
 	int checks_count;
@@ -105,7 +114,7 @@ static
 int run_constructor(AtSuite* suite, AtReporter* reporter);
 
 static
-int run_test(AtSuite* suite, AtTest* test, AtReporter* reporter);
+TestSummary run_test(AtSuite* suite, AtTest* test, AtReporter* reporter);
 
 static
 int init_result(AtResult* result);
@@ -118,6 +127,7 @@ AtCheckResult make_check_result(int status, const char* message,
                                 void (*clean_up)(const char*));
 
 /* Exposed functions */
+
 
 int at_add_test(AtSuite* suite, AtTest* test) {
 	return testarray_add(&suite->tests, test);
@@ -164,6 +174,7 @@ AtStreamReporter* at_new_stream_reporter(const char* file_name) {
 	return result;
 }
 
+
 AtSuite* at_new_suite(const char* name, AtTestFunc construct,
                       AtTestFunc destruct, AtTestFunc setup,
                       AtTestFunc teardown) {
@@ -194,6 +205,7 @@ void at_destroy_suite(AtSuite* suite) {
 
 void at_run_suite(AtSuite* suite, AtReporter* reporter) {
 	int i;
+	int tests = 0;
 	int failures = 0;
 	int errors = 0;
 
@@ -212,19 +224,17 @@ void at_run_suite(AtSuite* suite, AtReporter* reporter) {
 
 	for (i = 0; i < suite->tests.count; i++) {
 		AtTest* test = &suite->tests.pool[i];
+		TestSummary summary = { 0 };
 
-		int status = run_test(suite, test, reporter);
-		if (status == AT_E_TEST_ERROR) {
-			errors++;
-		}
-		else if (status == AT_E_TEST_FAILURE) {
-			failures++;
-		}
+		summary = run_test(suite, test, reporter);
+		tests += summary.tests;
+		errors += summary.errors;
+		failures += summary.failures;
 	}
-	report_footer(reporter, suite->tests.count, errors, failures);
+	report_footer(reporter, tests, errors, failures);
 
 	if (suite->destruct != NULL) {
-		suite->destruct();
+		suite->destruct(NULL);
 	}
 }
 
@@ -242,6 +252,26 @@ AtCheckResult at_make_failure(const char* msg,
 AtCheckResult at_make_success(void) {
 	return make_check_result(AtCheck_SUCCESS, NULL, NULL);
 }
+
+
+
+int at_array_iterator_has_next(AtIterator* iter) {
+	AtArrayIterator* self = (AtArrayIterator*) iter;
+	return self->current < self->size;
+}
+
+
+void* at_array_iterator_next(AtIterator* iter) {
+	AtArrayIterator* self = (AtArrayIterator*) iter;
+	return ((char*) self->array) + self->elem_size * self->current++;
+}
+
+
+void at_array_iterator_reset(AtIterator* iter) {
+	AtArrayIterator* self = (AtArrayIterator*) iter;
+	self->current = 0;
+}
+
 
 /* Internal function definitions. */
 
@@ -338,19 +368,22 @@ int fprintf_header(AtReporter* reporter, const char* name) {
 
 static
 int fprintf_check(AtReporter* reporter, char type, const char* test,
-	               const char* file, int line, int check, int checks,
-	               const char* message) {
+	              const char* iteration, const char* file, int line,
+	              int check, int checks, const char* message) {
 	AtStreamReporter* self = (AtStreamReporter*) reporter;
 	char* oneline_message = encode_crlf(message);
 	int status;
+	const char* lpar = (iteration)?" (":"";
+	const char* rpar = (iteration)?")":"";
+	iteration = (iteration)? iteration : "";
 
 	if (oneline_message == NULL) {
 		return AT_E_BADALLOC;
 	}
 
-	status = fprintf(self->stream, "%c\t%s\t%s\t%d\t%d\t%d\t%s\n",
-	                     type, test, file, line, check, checks,
-	                     oneline_message);
+	status = fprintf(self->stream, "%c\t%s%s%s%s\t%s\t%d\t%d\t%d\t%s\n",
+	                     type, test, lpar, iteration, rpar, file, line,
+	                     check, checks, oneline_message);
 
 	free(oneline_message);
 
@@ -462,17 +495,19 @@ int report_header(AtReporter* reporter, AtSuite* suite) {
 
 static
 int report_check(AtReporter* reporter, char type, const char* test_name,
-                 int checks_count, AtCheckResult* check) {
-	return reporter->check(reporter, type, test_name, check->file_name,
-	                       check->line_number, check->check_number +1,
-	                       checks_count, check->message);
+                 const char* iteration_name, int checks_count,
+                 AtCheckResult* check) {
+	return reporter->check(reporter, type, test_name, iteration_name,
+	                       check->file_name, check->line_number,
+	                       check->check_number +1, checks_count,
+	                       check->message);
 }
 
 
 static
 int report_constructor(AtReporter* reporter, AtResult* result) {
 	AtCheckResult* check = & result->error;
-	return report_check(reporter, 'E', "<constructor>",
+	return report_check(reporter, 'E', "<constructor>", NULL,
 	                    result->checks_count, check);
 }
 
@@ -480,13 +515,15 @@ int report_constructor(AtReporter* reporter, AtResult* result) {
 static
 int report_error(AtReporter* reporter, AtTest* test, AtResult* result) {
 	AtCheckResult* check = & result->error;
-	return report_check(reporter, 'E', test->name, result->checks_count, check);
+	return report_check(reporter, 'E', test->name, result->iteration_name,
+	                    result->checks_count, check);
 }
 
 
 static
 int report_failure(AtReporter* reporter, AtTest* test, AtResult* result) {
 	const char* test_name = test->name;
+	const char* iteration_name = result->iteration_name;
 	int failures_count = result->failures.count;
 	int checks_count = result->checks_count;
 	int i;
@@ -494,7 +531,8 @@ int report_failure(AtReporter* reporter, AtTest* test, AtResult* result) {
 	for (i = 0; i < failures_count; i++) {
 		AtCheckResult* check_result = & result->failures.pool[i];
 		int status =
-			report_check(reporter, 'F', test_name, checks_count, check_result);
+			report_check(reporter, 'F', test_name, iteration_name,
+			             checks_count, check_result);
 		if (status != AT_E_SUCCESS) {
 			return status;
 		}
@@ -539,7 +577,7 @@ int do_run_constructor(void* data) {
 	AtSuite* suite       = (AtSuite*)    ((void**) data)[0];
 	AtReporter* reporter = (AtReporter*) ((void**) data)[1];
 
-	suite->construct();
+	suite->construct(NULL);
 	if (at_current_result->has_error) {
 		/* Constructor has error. Abort everything and go home in shame. */
 		report_constructor(reporter, at_current_result);
@@ -563,17 +601,26 @@ int do_run_test(void* data) {
 	AtSuite* suite = (AtSuite*) ((void**) data)[0];
 	AtTest* test = (AtTest*) ((void**) data)[1];
 	AtReporter* reporter = (AtReporter*) ((void**) data)[2];
+	int* i = (int*) ((void**) data)[3];
+	void* test_data = ((void**) data)[4];
 	AtResult* result = at_current_result;
+	char name_buffer[32];
+	
+	if (*i >= 0) {
+		sprintf(name_buffer, "%d", *i);
+		at_current_result->iteration_name = name_buffer;
+	}
+
 	if (suite->setup != NULL) {
-		suite->setup();
+		suite->setup(test_data);
 	}
 
 	if (!result->has_error) {
-		test->test_func();
+		test->test_func(test_data);
 	}
 
 	if (suite->teardown != NULL) {
-		suite->teardown();
+		suite->teardown(test_data);
 	}
 
 	if (result->has_error) {
@@ -589,16 +636,49 @@ int do_run_test(void* data) {
 
 
 static
-int run_test(AtSuite* suite, AtTest* test, AtReporter* reporter) {
-	void* data[3];
+TestSummary run_test(AtSuite* suite, AtTest* test, AtReporter* reporter) {
+	void* data[5];
+	int status;
+	int i = -1;
+	TestSummary result = {0};
 	data[0] = suite;
 	data[1] = test;
 	data[2] = reporter;
-	return run_with_new_result(do_run_test, data);
+	data[3] = &i;
+
+	if (test->iterator) {
+		AtIterator* iterator = test->iterator;
+		iterator->reset(iterator);
+		while (iterator->has_next(iterator)) {
+			i++;
+			data[4] = iterator->next(iterator);
+			status = run_with_new_result(do_run_test, data);
+			result.tests++;
+			if (status == AT_E_TEST_ERROR) {
+				result.errors++;
+			}
+			else if (status == AT_E_TEST_FAILURE) {
+				result.failures++;
+			}
+		}
+	}
+	else {
+		data[4] = NULL;
+		status = run_with_new_result(do_run_test, data);
+		result.tests++;
+		if (status == AT_E_TEST_ERROR) {
+			result.errors++;
+		}
+		else if (status == AT_E_TEST_FAILURE) {
+			result.failures++;
+		}
+	}
+	return result;
 }
 
 static
 int init_result(AtResult* result) {
+	result->iteration_name = NULL;
 	result->has_error = 0;
 	result->error.status = AtCheck_SUCCESS;
 	result->checks_count = 0;

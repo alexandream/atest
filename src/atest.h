@@ -24,8 +24,26 @@ typedef struct AtStreamReporter AtStreamReporter;
 typedef struct AtResult AtResult;
 typedef struct AtSuite AtSuite;
 typedef struct AtTest AtTest;
+typedef struct AtIterator AtIterator;
+typedef struct AtArrayIterator AtArrayIterator;
 
-typedef void  (*AtTestFunc)(void);
+typedef void  (*AtTestFunc)(void*);
+
+struct AtIterator {
+	int   (*has_next)(AtIterator*);
+	void* (*next)(AtIterator*);
+	void  (*reset)(AtIterator*);
+};
+
+
+
+struct AtArrayIterator {
+	AtIterator vtable;
+	int elem_size;
+	int size;
+	int current;
+	void* array;
+};
 
 
 struct AtCheckResult {
@@ -40,7 +58,7 @@ struct AtCheckResult {
 
 struct AtReporter {
 	int (*header)(AtReporter*, const char*);
-	int (*check)(AtReporter*, char, const char*, const char*,
+	int (*check)(AtReporter*, char, const char*, const char*, const char*,
 	              int, int, int, const char*);
 	int (*footer)(AtReporter*, int, int, int);
 };
@@ -48,6 +66,7 @@ struct AtReporter {
 struct AtTest {
 	const char* name;
 	AtTestFunc test_func;
+	AtIterator* iterator;
 };
 
 /* Global variables */
@@ -81,6 +100,12 @@ AtCheckResult at_make_failure(const char* msg, void (*clean_up) (const char*));
 
 AtCheckResult at_make_success(void);
 
+int at_array_iterator_has_next(AtIterator*);
+
+void* at_array_iterator_next(AtIterator*);
+
+void at_array_iterator_reset(AtIterator*);
+
 
 #define at_assert(CHECK)\
 	if (!at_assert_f(CHECK, __FILE__, __LINE__)) return
@@ -90,4 +115,6 @@ AtCheckResult at_make_success(void);
 
 
 #define at_constructor
+
+
 #endif

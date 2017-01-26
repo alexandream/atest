@@ -9,12 +9,12 @@ const char* SUITE_NAME = "Strdup";
 
 char* DUPE = NULL;
 
-void setup(void) {
+void setup(void* _) {
 	DUPE = NULL;
 }
 
 
-void teardown(void) {
+void teardown(void* _) {
 	free(DUPE);
 }
 
@@ -31,22 +31,36 @@ AtCheckResult error() {
 	return at_make_error("We see\nthe error of\rour \\ways.", NULL);
 }
 
-void _t1(void) {
+void _t1(void* _) {
 	at_assert(success());
 }
 AtTest succ = { "Success", _t1 };
 
 
-void _t2(void) {
+void _t2(void* _) {
 	at_assert(failure());
 }
 AtTest fail = { "Failure", _t2 };
 
 
-void _t3(void) {
+int test_data[] = { 1, 2, 3 };
+AtArrayIterator iterwhatever = {
+	{
+		at_array_iterator_has_next,
+		at_array_iterator_next,
+		at_array_iterator_reset
+	},
+	sizeof(test_data[0]),
+	sizeof(test_data)/sizeof(test_data[0]),
+	0,
+	(void*) test_data
+
+};
+
+void _t3(void* _) {
 	at_assert(error());
 }
-AtTest err = { "Error", _t3 };
+AtTest err = { "Error", _t3, (AtIterator*) &iterwhatever};
 
 
 int main(int argc, char** argv) {
