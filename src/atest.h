@@ -114,7 +114,29 @@ void at_array_iterator_reset(AtIterator*);
 	do { at_error_f(MSG, CLEANUP, __FILE__, __LINE__); return; } while(0)
 
 
-#define at_constructor
 
+/* at_sf: Stringify -- Indirect stringification to use expansion. */
+#define at_sf2(x) #x
+#define at_sf(x) at_sf2(x)
+/* at_pt: Paste Tokens */
+#define at_pt2(x, y) x ## y
+#define at_pt(x, y) at_pt2(x, y)
+
+#define _at_test_function(NAME) static void NAME(void*)
+#define at_test(NAME)                    \
+_at_test_function(at_pt(_at_tf_,NAME));  \
+static AtTest NAME = {                   \
+	at_sf(NAME),                         \
+	at_pt(_at_tf_,NAME),                 \
+	NULL                                 \
+};                                       \
+_at_test_function(at_pt(_at_tf_,NAME))
+
+
+#define at_constructor(NAME) _at_test_function(NAME)
+#define at_destructor(NAME)  _at_test_function(NAME)
+#define at_setup(NAME)       _at_test_function(NAME)
+#define at_teardown(NAME)    _at_test_function(NAME)
+#define at_teardown(NAME)    _at_test_function(NAME)
 
 #endif
