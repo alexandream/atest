@@ -122,7 +122,7 @@ void at_array_iterator_reset(AtIterator*);
 #define at_pt2(x, y) x ## y
 #define at_pt(x, y) at_pt2(x, y)
 
-#define _at_test_function(NAME) static void NAME(void*)
+#define _at_test_function(NAME) static void NAME(void* _at_input)
 #define at_test(NAME)                    \
 _at_test_function(at_pt(_at_tf_,NAME));  \
 static AtTest NAME = {                   \
@@ -132,6 +132,30 @@ static AtTest NAME = {                   \
 };                                       \
 _at_test_function(at_pt(_at_tf_,NAME))
 
+
+#define at_data_driven_test(NAME, ITERATOR, INPUT_TYPE, INPUT_NAME) \
+static void at_pt(_at_tf_,NAME)(INPUT_TYPE* INPUT_NAME);            \
+_at_test_function(at_pt(_at_ddtf_,NAME)) {                          \
+	at_pt(_at_tf_,NAME)((INPUT_TYPE*) _at_input);                   \
+}                                                                   \
+static AtTest NAME = {                                              \
+	at_sf(NAME),                                                    \
+	at_pt(_at_ddtf_, NAME),                                         \
+	(AtIterator*) &ITERATOR                                         \
+};                                                                  \
+static void at_pt(_at_tf_,NAME)(INPUT_TYPE* INPUT_NAME)
+
+#define at_static_array_iterator(ARRAY) { \
+	{                                     \
+		at_array_iterator_has_next,       \
+		at_array_iterator_next,           \
+		at_array_iterator_reset           \
+	},                                    \
+	sizeof(ARRAY[0]),                     \
+	sizeof(ARRAY)/sizeof(ARRAY[0]),       \
+	0,                                    \
+	ARRAY                                 \
+}
 
 #define at_constructor(NAME) _at_test_function(NAME)
 #define at_destructor(NAME)  _at_test_function(NAME)

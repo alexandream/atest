@@ -31,36 +31,22 @@ AtCheckResult error() {
 	return at_make_error("We see\nthe error of\rour \\ways.", NULL);
 }
 
-void _t1(void* _) {
+at_test(Success) {
 	at_assert(success());
 }
-AtTest succ = { "Success", _t1 };
 
 
-void _t2(void* _) {
+at_test(Failure) {
 	at_assert(failure());
 }
-AtTest fail = { "Failure", _t2 };
 
 
 int test_data[] = { 1, 2, 3 };
-AtArrayIterator iterwhatever = {
-	{
-		at_array_iterator_has_next,
-		at_array_iterator_next,
-		at_array_iterator_reset
-	},
-	sizeof(test_data[0]),
-	sizeof(test_data)/sizeof(test_data[0]),
-	0,
-	(void*) test_data
+AtArrayIterator iterwhatever = at_static_array_iterator(test_data);
 
-};
-
-void _t3(void* _) {
+at_data_driven_test(Errorx, iterwhatever, int, data) {
 	at_assert(error());
 }
-AtTest err = { "Error", _t3, (AtIterator*) &iterwhatever};
 
 
 int main(int argc, char** argv) {
@@ -69,9 +55,9 @@ int main(int argc, char** argv) {
 		at_new_suite("Strdup", NULL, NULL, setup, teardown);
 
 	
-	at_add_test(suite, &succ);
-	at_add_test(suite, &fail);
-	at_add_test(suite, &err);
+	at_add_test(suite, &Success);
+	at_add_test(suite, &Failure);
+	at_add_test(suite, &Errorx);
 	
 	if (argc > 1) {
 		const char* file_name = argv[1];
