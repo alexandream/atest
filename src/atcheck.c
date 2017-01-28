@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <string.h>
+
 #include "atcheck.h"
 
 #define EQ_CHECK_BODY(EXPRESSION, VALUE, EXPECTED, COMPARISON, FORMAT)   \
@@ -32,4 +34,10 @@ AtCheckResult at_eq_ulong(const char* expr, unsigned long value,
 
 AtCheckResult at_eq_ptr(const char* expr, void* value, void* expected ) {
 	EQ_CHECK_BODY(expr, value, expected, (value == expected), "%p");
+}
+
+AtCheckResult at_eq_str(const char* expr, const char* value,
+                        const char* expected) {
+	EQ_CHECK_BODY(expr, value, expected, (!strcmp(value, expected)),
+	              "\n    \"%s\"\n");
 }
