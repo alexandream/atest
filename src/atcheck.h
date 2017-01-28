@@ -35,6 +35,13 @@ AtCheckResult at_eq_ptr(const char* expr, void* value, void* expected );
         at_eq_ulong(X, (unsigned short) V, (unsigned short) E)
 
 /* Helper macros that automatically print the expression. */
+#define AT_EQ_INT(V, E)    at_eq_int(#V, V, E)
+#define AT_EQ_UINT(V, E)   at_eq_uint(#V, V, E)
+#define AT_EQ_SHORT(V, E)  at_eq_short(#V, V, E)
+#define AT_EQ_USHORT(V, E) at_eq_ushort(#V, V, E)
+#define AT_EQ_LONG(V, E)   at_eq_long(#V, V, E)
+#define AT_EQ_ULONG(V, E)  at_eq_ulong(#V, V, E)
+
 #define AT_EQ_PTR(V, E) at_eq_ptr(#V, V, E)
 #define AT_IS_NULL(V) AT_EQ_PTR(V, NULL)
 #endif
