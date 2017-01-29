@@ -20,7 +20,8 @@ AtCheckResult at_eq_long(const char* expr, long value, long expected);
 AtCheckResult at_eq_ulong(const char* expr, unsigned long value,
                           unsigned long expected);
 
-AtCheckResult at_eq_ptr(const char* expr, void* value, void* expected );
+AtCheckResult at_eq_ptr(const char* expr, const void* value,
+                        const void* expected );
 
 AtCheckResult at_eq_str(const char* expr, const char* value,
                         const char* expected);

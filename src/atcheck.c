@@ -32,7 +32,8 @@ AtCheckResult at_eq_ulong(const char* expr, unsigned long value,
 	EQ_CHECK_BODY(expr, value, expected, (value == expected), "%lu");
 }
 
-AtCheckResult at_eq_ptr(const char* expr, void* value, void* expected ) {
+AtCheckResult at_eq_ptr(const char* expr, const void* value,
+                        const void* expected ) {
 	EQ_CHECK_BODY(expr, value, expected, (value == expected), "%p");
 }
 
