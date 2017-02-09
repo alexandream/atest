@@ -93,12 +93,13 @@ int get_part_length(const char* part, va_list ap, const char** next_part) {
 	else {
 		size_t fmt_len = strcspn(part+1, VALID_TYPES) + 1;
 		char type = part[fmt_len];
-
+        const char* str_part = NULL;
 		*next_part = part + fmt_len + 1;
 		
 		switch(type) {
 			case 's':
-				result = strlen(va_arg(ap, const char*));
+                str_part = va_arg(ap, const char*);
+				result = str_part ? strlen(str_part) : strlen("(null)");
 				break;
 			case '%':
 				result = 1;
