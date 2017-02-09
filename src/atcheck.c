@@ -42,3 +42,21 @@ AtCheckResult at_eq_str(const char* expr, const char* value,
 	EQ_CHECK_BODY(expr, value, expected, (!strcmp(value, expected)),
 	              "\n    \"%s\"\n");
 }
+
+
+AtCheckResult at_is_true(const char* expr, int value) {
+	if (! value ) {
+		const char* _at_msg =
+			at_allocf("Expression (%s) expected to be true, but found "
+				      "to be false.",
+					  expr);
+		if (_at_msg == NULL) {
+			const char* _at_error_msg =
+				"Allocation error during failed check";
+			return
+				at_make_error(_at_error_msg, NULL);
+		}
+		return at_make_failure(_at_msg, at_freef);
+	}
+	return at_make_success();
+}

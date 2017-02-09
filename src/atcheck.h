@@ -26,6 +26,8 @@ AtCheckResult at_eq_ptr(const char* expr, const void* value,
 AtCheckResult at_eq_str(const char* expr, const char* value,
                         const char* expected);
 
+AtCheckResult at_is_true(const char* expr, int value);
+
 #define at_eq_int(X, V, E) \
         at_eq_long(X, (int) V, (int) E)
 
@@ -49,5 +51,6 @@ AtCheckResult at_eq_str(const char* expr, const char* value,
 #define AT_EQ_PTR(V, E) at_eq_ptr(#V, V, E)
 #define AT_EQ_STR(V, E) at_eq_str(#V, V, E)
 
+#define AT_IS_TRUE(V) at_is_true(#V, V)
 #define AT_IS_NULL(V) AT_EQ_PTR(V, NULL)
 #endif
