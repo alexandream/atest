@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
     printf ("%s\n", EQUAL_80);
     printf("| %-46s| %s | %s | %s | %s |\n",
-           "Suite Name", "Tests", "Errors", "Fails", " %%");
+           "Suite Name", "Tests", "Errors", "Fails", "  %");
     printf("|%s|%s|%s|%s|%s|\n",
            "-----------------------------------------------",
            "-------","--------","-------","-----");
@@ -66,8 +66,14 @@ int main(int argc, char** argv) {
 
     for (i = 0; i < num_summaries; i++) {
         SuiteSummary *summary = summary_pool +i;
-        int percent = 100 - 100 * (summary->errors + summary->failures)
+        int percent;
+		if (summary->tests > 0) {
+			percent = 100 - 100 * (summary->errors + summary->failures)
                                 / summary->tests;
+		}
+		else {
+			percent = 0;
+		}
         printf("| %-46s|   %3d |    %3d |   %3d | %3d |\n",
                summary->name, summary->tests, summary->errors,
                summary->failures, percent);
