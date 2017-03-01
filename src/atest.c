@@ -218,6 +218,7 @@ void at_run_suite(AtSuite* suite, AtReporter* reporter) {
 	if (suite->construct != NULL) {
 		if (run_constructor(suite, reporter) != AT_E_SUCCESS) {
 			/* Constructor has error. Abort and go home in shame. */
+			report_footer(reporter, 0, 1, 0);
 			return;
 		}
 	}
